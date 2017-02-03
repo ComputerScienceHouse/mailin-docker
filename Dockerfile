@@ -10,6 +10,10 @@ RUN apk add --update --no-cache \
     nodejs \
     spamassassin \
     spamassassin-client \
+    supervisor \
+    wget \
+  && sa-update \
+  && mkdir -p /etc/mail/spamassassin \
   && adduser -S $MAILIN_USER \
   && mkdir $MAILIN_HOME \
   && chown -R $MAILIN_USER $MAILIN_HOME \
@@ -19,6 +23,10 @@ RUN apk add --update --no-cache \
 # Install mailin
 RUN npm install -g mailin
 
+# Copy configs into the container
+COPY supervisord.conf /etc/
+COPY spamc.conf /etc/mail/spamassassin/
+
 # Run as a non-priviledged user
 USER $MAILIN_USER
 WORKDIR $MAILIN_HOME
@@ -26,4 +34,4 @@ WORKDIR $MAILIN_HOME
 # Expose a non-priviledged port for SMTP
 EXPOSE 2525
 
-CMD ["/bin/sh", "-c", "/usr/bin/mailin --port $LISTEN_PORT --webhook $WEBHOOK_URL"]
+CMD ["supervisord", "--configuration", "/etc/supervisord.conf"]
